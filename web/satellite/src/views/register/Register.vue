@@ -134,8 +134,6 @@ import { createUserRequest } from '../../api/users';
             if (this.$route.query.token) {
                 this.$data.secret = this.$route.query.token.toString();
             }
- 
-            this.analytics.page(ROUTES.REGISTER.name);
         }
     })
 

@@ -5,24 +5,19 @@ import Vue from 'vue';
 import App from './App.vue';
 import router from './router';
 import store from './store';
+import { AnalyticsPlugin } from './plugins/analytics';
 
+Vue.config.productionTip = false;
 declare module 'vue/types/vue' {
     interface Vue {
-        analytics: {
-            page(name: string): void,
-            track(event: string): void,
-            identity(): void,
-        };
+        analytics: analytics;
     }
 }
 
-Vue.config.productionTip = false;
-Vue.prototype.analytics = (<any>window).analytics;
+Vue.use(AnalyticsPlugin);
 
 new Vue({
     router,
     store,
     render: (h) => h(App),
 }).$mount('#app');
-
-(<any>window).analytics.page(router.currentRoute.name);

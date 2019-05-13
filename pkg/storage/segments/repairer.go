@@ -66,7 +66,7 @@ func (repairer *Repairer) Repair(ctx context.Context, path storj.Path) (err erro
 	var excludeNodeIDs storj.NodeIDList
 	var healthyPieces []*pb.RemotePiece
 	pieces := pointer.GetRemote().GetRemotePieces()
-	missingPieces, err := repairer.updateMissingPieces(ctx, pieces)
+	missingPieces, err := repairer.cache.GetMissingPieces(ctx, pieces)
 	if err != nil {
 		return Error.New("error getting missing pieces %s", err)
 	}
@@ -167,24 +167,4 @@ func createBucketID(path storj.Path) ([]byte, error) {
 		return nil, Error.New("no bucket component in path: %s", path)
 	}
 	return []byte(storj.JoinPaths(comps[0], comps[2])), nil
-}
-
-func (repairer *Repairer) updateMissingPieces(ctx context.Context, pieces []*pb.RemotePiece) (missingPieces []int32, err error) {
-	var nodeIDs storj.NodeIDList
-	for _, p := range pieces {
-		nodeIDs = append(nodeIDs, p.NodeId)
-	}
-	badNodeIDs, err := repairer.cache.KnownUnreliableOrOffline(ctx, nodeIDs)
-	if err != nil {
-		return nil, Error.New("error getting nodes %s", err)
-	}
-
-	for _, p := range pieces {
-		for _, nodeID := range badNodeIDs {
-			if nodeID == p.NodeId {
-				missingPieces = append(missingPieces, p.GetPieceNum())
-			}
-		}
-	}
-	return missingPieces, nil
 }

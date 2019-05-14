@@ -56,7 +56,7 @@ func NewServer(logger *zap.Logger, config Config, listener net.Listener) *Server
 // localAccessHandler is a method for ensuring allow request only from localhost
 func (s *Server) localAccessHandler(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if !strings.HasPrefix(req.RemoteAddr, "127.0.0.1") {
+		if strings.Split(req.RemoteAddr, ":")[0] != strings.Split(s.config.Address, ":")[0] {
 			s.serveError(w, req)
 			return
 		}

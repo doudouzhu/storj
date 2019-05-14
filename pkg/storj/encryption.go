@@ -156,6 +156,22 @@ func NewKey(passphrase []byte) (*Key, error) {
 	return &key, nil
 }
 
+// NewKeyFromSlice returns a Key from a slice of bytes.
+//
+// It retuns an error if the lenth of rawKey isn't KeySize
+//
+// TODO: WIP#if/v3-1541#3 write test for this function
+func NewKeyFromSlice(rawKey []byte) (*Key, error) {
+	if len(rawKey) != KeySize {
+		return nil, ErrKey.New("rawKey doesn't have length of %d, got %d", KeySize, len(rawKey))
+	}
+
+	var key Key
+	copy(key[:], rawKey)
+
+	return &key, nil
+}
+
 // Key represents the largest key used by any encryption protocol
 type Key [KeySize]byte
 

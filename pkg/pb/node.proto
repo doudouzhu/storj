@@ -17,6 +17,7 @@ message Node {
     NodeAddress address = 2;
     reserved 3 to 13;
     reserved "type", "restrictions", "reputation", "metadata", "latency_list", "audit_success", "is_up", "update_latency", "update_audit_success", "update_uptime", "version";
+    NodeAddress paddress = 14;
 }
 
 // NodeType is an enum of possible node types

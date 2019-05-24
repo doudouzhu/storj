@@ -133,7 +133,7 @@ func (service *Service) updateNodeInformation(ctx context.Context) error {
 		return Error.Wrap(err)
 	}
 
-	service.routingTable.UpdateSelf(&pb.NodeCapacity{
+	service.routingTable.UpdateSelfCapacity(&pb.NodeCapacity{
 		FreeBandwidth: service.allocatedBandwidth - usedBandwidth,
 		FreeDisk:      service.allocatedDiskSpace - usedSpace,
 	})

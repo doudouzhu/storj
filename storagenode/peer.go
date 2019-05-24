@@ -11,10 +11,12 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"storj.io/storj/internal/errs2"
+	"storj.io/storj/internal/sync2"
 	"storj.io/storj/internal/version"
 	"storj.io/storj/pkg/auth/signing"
 	"storj.io/storj/pkg/identity"
 	"storj.io/storj/pkg/kademlia"
+	"storj.io/storj/pkg/nat"
 	"storj.io/storj/pkg/overlay"
 	"storj.io/storj/pkg/pb"
 	"storj.io/storj/pkg/peertls/tlsopts"
@@ -84,6 +86,9 @@ type Peer struct {
 
 	Version *version.Service
 
+	Nat        *nat.NAT
+	Mapping    nat.Mapping
+	RefreshNat sync2.Cycle
 	// services and endpoints
 	// TODO: similar grouping to satellite.Peer
 	Kademlia struct {
@@ -140,6 +145,20 @@ func New(log *zap.Logger, full *identity.FullIdentity, db DB, config Config, ver
 		}
 	}
 
+	{ // setup nat
+		dnat, err := nat.DiscoverNAT(context.Background(), log)
+		if err != nil {
+			return nil, errs.Combine(err, peer.Close())
+		}
+		mapping, err := dnat.NewMapping("tcp", 8920)
+		if err != nil {
+			return nil, errs.Combine(err, peer.Close())
+		}
+
+		peer.Nat = dnat
+		peer.Mapping = mapping
+	}
+
 	{ // setup kademlia
 		config := config.Kademlia
 		// TODO: move this setup logic into kademlia package
@@ -152,12 +171,21 @@ func New(log *zap.Logger, full *identity.FullIdentity, db DB, config Config, ver
 			return nil, errs.Combine(err, peer.Close())
 		}
 
+		paddress, err := peer.Mapping.ExternalAddr()
+		if err != nil {
+			return nil, errs.Combine(err, peer.Close())
+		}
+
 		self := &overlay.NodeDossier{
 			Node: pb.Node{
 				Id: peer.ID(),
 				Address: &pb.NodeAddress{
 					Transport: pb.NodeTransport_TCP_TLS_GRPC,
 					Address:   config.ExternalAddress,
+				},
+				Paddress: &pb.NodeAddress{
+					Transport: pb.NodeTransport_TCP_TLS_GRPC,
+					Address:   paddress.String(),
 				},
 			},
 			Type: pb.NodeType_STORAGE,
@@ -185,6 +213,10 @@ func New(log *zap.Logger, full *identity.FullIdentity, db DB, config Config, ver
 
 		peer.Kademlia.Inspector = kademlia.NewInspector(peer.Kademlia.Service, peer.Identity)
 		pb.RegisterKadInspectorServer(peer.Server.PrivateGRPC(), peer.Kademlia.Inspector)
+	}
+
+	{ // nat refresh
+		peer.RunNatRefresh(context.Background())
 	}
 
 	{ // setup storage

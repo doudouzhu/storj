@@ -125,6 +125,11 @@ func (k *Kademlia) GetBucketIds() (storage.Keys, error) {
 	return k.routingTable.GetBucketIds()
 }
 
+// GetRoutingTable
+func (k *Kademlia) GetRoutingTable() (*RoutingTable, error) {
+	return k.routingTable, nil
+}
+
 // Local returns the local node
 func (k *Kademlia) Local() overlay.NodeDossier {
 	return k.routingTable.Local()

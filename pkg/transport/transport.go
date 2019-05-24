@@ -58,9 +58,16 @@ func NewClientWithTimeout(tlsOpts *tlsopts.Options, requestTimeout time.Duration
 func (transport *Transport) DialNode(ctx context.Context, node *pb.Node, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
 	defer mon.Task()(&ctx)(&err)
 
-	if node.Address == nil || node.Address.Address == "" {
+	var address string
+
+	if node.Paddress != nil && node.Paddress.Address != "" {
+		address = node.GetPaddress().Address
+	} else if node.Address != nil && node.Address.Address != "" {
+		address = node.GetAddress().Address
+	} else {
 		return nil, Error.New("no address")
 	}
+
 	dialOption, err := transport.tlsOpts.DialOption(node.Id)
 	if err != nil {
 		return nil, err
@@ -77,7 +84,7 @@ func (transport *Transport) DialNode(ctx context.Context, node *pb.Node, opts ..
 	timedCtx, cancel := context.WithTimeout(ctx, defaultDialTimeout)
 	defer cancel()
 
-	conn, err = grpc.DialContext(timedCtx, node.GetAddress().Address, options...)
+	conn, err = grpc.DialContext(timedCtx, address, options...)
 	if err != nil {
 		if err == context.Canceled {
 			return nil, err

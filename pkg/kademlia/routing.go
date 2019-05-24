@@ -113,12 +113,18 @@ func (rt *RoutingTable) Local() overlay.NodeDossier {
 }
 
 // UpdateSelf updates the local node with the provided info
-func (rt *RoutingTable) UpdateSelf(capacity *pb.NodeCapacity) {
+func (rt *RoutingTable) UpdateSelfCapacity(capacity *pb.NodeCapacity) {
 	rt.mutex.Lock()
 	defer rt.mutex.Unlock()
 	if capacity != nil {
 		rt.self.Capacity = *capacity
 	}
+}
+
+func (rt *RoutingTable) UpdateSelfPaddress(paddress string) {
+	rt.mutex.Lock()
+	defer rt.mutex.Unlock()
+	rt.self.Paddress.Address = paddress
 }
 
 // K returns the currently configured maximum of nodes to store in a bucket

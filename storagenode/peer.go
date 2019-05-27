@@ -151,7 +151,7 @@ func New(log *zap.Logger, full *identity.FullIdentity, db DB, config Config, ver
 		if err != nil {
 			return nil, errs.Combine(err, peer.Close())
 		}
-		mapping, err := dnat.NewMapping("tcp", 8920)
+		mapping, err := dnat.NewMapping("tcp", 28967)
 		if err != nil {
 			return nil, errs.Combine(err, peer.Close())
 		}

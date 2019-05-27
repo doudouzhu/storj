@@ -184,6 +184,7 @@ func (k *Kademlia) Bootstrap(ctx context.Context) error {
 				continue
 			}
 
+			k.log.Debug("add online bootstrapNode", zap.Any("ident.ID", ident.ID))
 			k.routingTable.mutex.Lock()
 			node.Id = ident.ID
 			k.bootstrapNodes[i] = node
@@ -197,11 +198,13 @@ func (k *Kademlia) Bootstrap(ctx context.Context) error {
 		}
 
 		//find nodes most similar to self
+		k.log.Debug("start find nodes most similar to self")
 		k.routingTable.mutex.Lock()
 		id := k.routingTable.self.Id
 		k.routingTable.mutex.Unlock()
 		_, err := k.lookup(ctx, id, true)
 		if err != nil {
+			k.log.Warn("lookup fail", zap.Error(err), zap.Any("id", id))
 			errGroup.Add(err)
 			continue
 		}
@@ -215,6 +218,7 @@ func (k *Kademlia) Bootstrap(ctx context.Context) error {
 	}
 
 	errGroup.Add(Error.New("unable to start bootstrap after final wait time of %s", waitInterval))
+	k.log.Warn("unable to start bootstrap after final wait time")
 	return errGroup.Err()
 }
 
@@ -231,6 +235,7 @@ func (k *Kademlia) FetchPeerIdentity(ctx context.Context, nodeID storj.NodeID) (
 	defer k.lookups.Done()
 	node, err := k.FindNode(ctx, nodeID)
 	if err != nil {
+		k.log.Debug("findNode fail", zap.Any("nodeID", nodeID), zap.Error(err))
 		return nil, err
 	}
 	return k.dialer.FetchPeerIdentity(ctx, node)
@@ -245,9 +250,11 @@ func (k *Kademlia) Ping(ctx context.Context, node pb.Node) (pb.Node, error) {
 
 	ok, err := k.dialer.PingNode(ctx, node)
 	if err != nil {
+		k.log.Debug("PingNode fail", zap.Any("node", node), zap.Error(err))
 		return pb.Node{}, NodeErr.Wrap(err)
 	}
 	if !ok {
+		k.log.Debug("pinging node fail", zap.Any("node", node), zap.Error(err))
 		return pb.Node{}, NodeErr.New("Failed pinging node")
 	}
 	return node, nil
@@ -262,6 +269,7 @@ func (k *Kademlia) FetchInfo(ctx context.Context, node pb.Node) (*pb.InfoRespons
 
 	info, err := k.dialer.FetchInfo(ctx, node)
 	if err != nil {
+		k.log.Debug("FetchInfo fail", zap.Any("node", node), zap.Error(err))
 		return nil, NodeErr.Wrap(err)
 	}
 	return info, nil
@@ -295,6 +303,7 @@ func (k *Kademlia) lookup(ctx context.Context, ID storj.NodeID, isBootstrap bool
 		var err error
 		nodes, err = k.routingTable.FindNear(ID, kb)
 		if err != nil {
+			k.log.Debug("FindNead fail", zap.Any("ID", ID), zap.Error(err))
 			return pb.Node{}, err
 		}
 	}
@@ -303,6 +312,7 @@ func (k *Kademlia) lookup(ctx context.Context, ID storj.NodeID, isBootstrap bool
 	})
 	target, err := lookup.Run(ctx)
 	if err != nil {
+		k.log.Debug("lookup run fail", zap.Error(err), zap.Any("ID", ID))
 		return pb.Node{}, err
 	}
 	bucket, err := k.routingTable.getKBucketID(ID)

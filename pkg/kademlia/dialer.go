@@ -55,6 +55,7 @@ func (dialer *Dialer) Lookup(ctx context.Context, self pb.Node, ask pb.Node, fin
 
 	conn, err := dialer.dialNode(ctx, ask)
 	if err != nil {
+		dialer.log.Debug("dialNode fail", zap.Any("ask", ask))
 		return nil, err
 	}
 
@@ -65,6 +66,7 @@ func (dialer *Dialer) Lookup(ctx context.Context, self pb.Node, ask pb.Node, fin
 		Pingback: true, // should only be true during bucket refreshing
 	})
 	if err != nil {
+		dialer.log.Debug("lookup.Query fail", zap.Error(err), zap.Any("target", find))
 		return nil, errs.Combine(err, conn.disconnect())
 	}
 
@@ -80,6 +82,7 @@ func (dialer *Dialer) PingNode(ctx context.Context, target pb.Node) (bool, error
 
 	conn, err := dialer.dialNode(ctx, target)
 	if err != nil {
+		dialer.log.Debug("PingNode dialNode fail", zap.Error(err), zap.Any("target", target))
 		return false, err
 	}
 

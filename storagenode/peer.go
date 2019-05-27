@@ -146,6 +146,7 @@ func New(log *zap.Logger, full *identity.FullIdentity, db DB, config Config, ver
 	}
 
 	{ // setup nat
+		peer.Log.Info("Setting up NAT")
 		dnat, err := nat.DiscoverNAT(context.Background(), log)
 		if err != nil {
 			return nil, errs.Combine(err, peer.Close())
@@ -160,6 +161,7 @@ func New(log *zap.Logger, full *identity.FullIdentity, db DB, config Config, ver
 	}
 
 	{ // setup kademlia
+		peer.Log.Info("Setting up kademlia")
 		config := config.Kademlia
 		// TODO: move this setup logic into kademlia package
 		if config.ExternalAddress == "" {
@@ -175,6 +177,7 @@ func New(log *zap.Logger, full *identity.FullIdentity, db DB, config Config, ver
 		if err != nil {
 			return nil, errs.Combine(err, peer.Close())
 		}
+		peer.Log.Info("NAT Paddress", zap.String("paddress", paddress.String()))
 
 		self := &overlay.NodeDossier{
 			Node: pb.Node{
@@ -216,10 +219,12 @@ func New(log *zap.Logger, full *identity.FullIdentity, db DB, config Config, ver
 	}
 
 	{ // nat refresh
+		peer.Log.Info("Starting NatRefresh")
 		peer.RunNatRefresh(context.Background())
 	}
 
 	{ // setup storage
+		peer.Log.Info("Setting up storage")
 		trustAllSatellites := !config.Storage.SatelliteIDRestriction
 		peer.Storage2.Trust, err = trust.NewPool(peer.Kademlia.Service, trustAllSatellites, config.Storage.WhitelistedSatelliteIDs)
 		if err != nil {

@@ -142,6 +142,7 @@ func cmdRun(cmd *cobra.Command, args []string) (err error) {
 
 	peer, err := storagenode.New(log, identity, db, runCfg.Config, version.Build)
 	if err != nil {
+		log.Sugar().Error("storage new fail, err", err)
 		return err
 	}
 
@@ -158,10 +159,14 @@ func cmdRun(cmd *cobra.Command, args []string) (err error) {
 
 	err = db.CreateTables()
 	if err != nil {
+		zap.S().Error("error creating tables for master database on storagenode:", err)
 		return errs.New("Error creating tables for master database on storagenode: %+v", err)
 	}
 
 	runError := peer.Run(ctx)
+	if runError != nil {
+		zap.S().Error("peer Run fail:", runError)
+	}
 	closeError := peer.Close()
 
 	return errs.Combine(runError, closeError)

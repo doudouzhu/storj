@@ -13,19 +13,19 @@ import (
 func (peer *Peer) NatRefresh() error {
 	var err error
 	var externalAddr net.Addr
-	var curPaddress string
+	var curAddress string
 	var node overlay.NodeDossier
 
 	node = peer.Kademlia.Service.Local()
 	if externalAddr, err = peer.Mapping.ExternalAddr(); err != nil {
 		peer.Log.Warn("get mapping externalAddr fail", zap.Error(err))
-	} else if curPaddress = externalAddr.String(); false {
-	} else if node.Paddress.Address == curPaddress {
+	} else if curAddress = externalAddr.String(); false {
+	} else if node.Address.Address == curAddress {
 	} else {
-		peer.Log.Warn("UpdateSelfPaddress",
-			zap.String("old paddress", node.Paddress.Address),
-			zap.String("cur paddress", curPaddress))
-		peer.Kademlia.RoutingTable.UpdateSelfPaddress(curPaddress)
+		peer.Log.Info("UpdateSelfAddress",
+			zap.String("old address", node.Address.Address),
+			zap.String("cur address", curAddress))
+		peer.Kademlia.RoutingTable.UpdateSelfAddress(curAddress)
 	}
 
 	return err

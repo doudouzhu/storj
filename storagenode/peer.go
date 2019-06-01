@@ -149,10 +149,12 @@ func New(log *zap.Logger, full *identity.FullIdentity, db DB, config Config, ver
 		peer.Log.Info("Setting up NAT")
 		dnat, err := nat.DiscoverNAT(context.Background(), log)
 		if err != nil {
+			peer.Log.Warn("discoverNAT fail", zap.Error(err))
 			return nil, errs.Combine(err, peer.Close())
 		}
 		mapping, err := dnat.NewMapping("tcp", 28967)
 		if err != nil {
+			peer.Log.Warn("get ExternalAddr fail", zap.Error(err))
 			return nil, errs.Combine(err, peer.Close())
 		}
 
@@ -163,9 +165,10 @@ func New(log *zap.Logger, full *identity.FullIdentity, db DB, config Config, ver
 	{ // setup kademlia
 		peer.Log.Info("Setting up kademlia")
 		config := config.Kademlia
+		var address string
 		// TODO: move this setup logic into kademlia package
-		if config.ExternalAddress == "" {
-			config.ExternalAddress = peer.Addr()
+		if config.ExternalAddress != "" {
+			address = config.ExternalAddress
 		}
 
 		pbVersion, err := versionInfo.Proto()
@@ -177,18 +180,17 @@ func New(log *zap.Logger, full *identity.FullIdentity, db DB, config Config, ver
 		if err != nil {
 			return nil, errs.Combine(err, peer.Close())
 		}
-		peer.Log.Info("NAT Paddress", zap.String("paddress", paddress.String()))
+		peer.Log.Info("NAT external address", zap.String("nat external address", paddress.String()))
+		if address == "" && paddress.String() != "" {
+			address = paddress.String()
+		}
 
 		self := &overlay.NodeDossier{
 			Node: pb.Node{
 				Id: peer.ID(),
 				Address: &pb.NodeAddress{
 					Transport: pb.NodeTransport_TCP_TLS_GRPC,
-					Address:   config.ExternalAddress,
-				},
-				Paddress: &pb.NodeAddress{
-					Transport: pb.NodeTransport_TCP_TLS_GRPC,
-					Address:   paddress.String(),
+					Address:   address,
 				},
 			},
 			Type: pb.NodeType_STORAGE,
@@ -216,11 +218,6 @@ func New(log *zap.Logger, full *identity.FullIdentity, db DB, config Config, ver
 
 		peer.Kademlia.Inspector = kademlia.NewInspector(peer.Kademlia.Service, peer.Identity)
 		pb.RegisterKadInspectorServer(peer.Server.PrivateGRPC(), peer.Kademlia.Inspector)
-	}
-
-	{ // nat refresh
-		peer.Log.Info("Starting NatRefresh")
-		peer.RunNatRefresh(context.Background())
 	}
 
 	{ // setup storage
@@ -298,6 +295,9 @@ func (peer *Peer) Run(ctx context.Context) error {
 	})
 	group.Go(func() error {
 		return errs2.IgnoreCanceled(peer.Kademlia.Service.Run(ctx))
+	})
+	group.Go(func() error {
+		return errs2.IgnoreCanceled(peer.RunNatRefresh(ctx))
 	})
 
 	group.Go(func() error {

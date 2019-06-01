@@ -121,10 +121,10 @@ func (rt *RoutingTable) UpdateSelfCapacity(capacity *pb.NodeCapacity) {
 	}
 }
 
-func (rt *RoutingTable) UpdateSelfPaddress(paddress string) {
+func (rt *RoutingTable) UpdateSelfAddress(address string) {
 	rt.mutex.Lock()
 	defer rt.mutex.Unlock()
-	rt.self.Paddress.Address = paddress
+	rt.self.Address.Address = address
 }
 
 // K returns the currently configured maximum of nodes to store in a bucket

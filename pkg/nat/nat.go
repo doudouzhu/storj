@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-  "go.uber.org/zap"
 	goprocess "github.com/jbenet/goprocess"
 	periodic "github.com/jbenet/goprocess/periodic"
 	nat "github.com/libp2p/go-nat"
+	"go.uber.org/zap"
 )
 
 var (
@@ -53,7 +53,7 @@ func DiscoverNAT(ctx context.Context, log *zap.Logger) (*NAT, error) {
 	// Log the device addr.
 	addr, err := natInstance.GetDeviceAddress()
 	if err != nil {
-		log.Info("DiscoverGateway address has error", zap.Error(err))
+		log.Warn("DiscoverGateway address has error", zap.Error(err))
 	} else {
 		log.Info("DiscoverGateway address", zap.Any("deviceAddress", addr))
 	}
@@ -66,7 +66,7 @@ func DiscoverNAT(ctx context.Context, log *zap.Logger) (*NAT, error) {
 // service that will periodically renew port mappings,
 // and keep an up-to-date list of all the external addresses.
 type NAT struct {
-  log *zap.Logger
+	log   *zap.Logger
 	natmu sync.Mutex
 	nat   nat.NAT
 	proc  goprocess.Process
@@ -77,7 +77,7 @@ type NAT struct {
 
 func newNAT(realNAT nat.NAT, log *zap.Logger) *NAT {
 	return &NAT{
-    log:      log,
+		log:      log,
 		nat:      realNAT,
 		proc:     goprocess.WithParent(goprocess.Background()),
 		mappings: make(map[*mapping]struct{}),
@@ -169,7 +169,7 @@ func (nat *NAT) NewMapping(protocol string, port int) (Mapping, error) {
 func (nat *NAT) establishMapping(m *mapping) {
 	oldport := m.ExternalPort()
 
-	nat.log.Info("Attempting port map", zap.String("protocol", m.Protocol()),zap.Int("port", m.InternalPort()))
+	nat.log.Debug("Attempting port map", zap.String("protocol", m.Protocol()), zap.Int("port", m.InternalPort()))
 	comment := "libp2p"
 
 	nat.natmu.Lock()
@@ -183,16 +183,16 @@ func (nat *NAT) establishMapping(m *mapping) {
 	if err != nil || newport == 0 {
 		m.setExternalPort(0) // clear mapping
 		// TODO: log.Event
-    nat.log.Warn("failed to establish port mapping", zap.Error(err))
+		nat.log.Warn("failed to establish port mapping", zap.Error(err))
 		// we do not close if the mapping failed,
 		// because it may work again next time.
 		return
 	}
 
 	m.setExternalPort(newport)
-  mappingInfo := fmt.Sprintf("%s --> %s (%s)", m.ExternalPort(), m.InternalPort(), m.Protocol())
-	nat.log.Info("NAT Mapping", zap.String("mappingInfo", mappingInfo))
+	mappingInfo := fmt.Sprintf("%s --> %s (%s)", m.ExternalPort(), m.InternalPort(), m.Protocol())
+	nat.log.Debug("NAT Mapping", zap.String("mappingInfo", mappingInfo))
 	if oldport != 0 && newport != oldport {
-		nat.log.Info("failed to renew same port mapping", zap.Int("oldport", oldport), zap.Int("newport", newport))
+		nat.log.Warn("failed to renew same port mapping", zap.Int("oldport", oldport), zap.Int("newport", newport))
 	}
 }

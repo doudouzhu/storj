@@ -60,9 +60,7 @@ func (transport *Transport) DialNode(ctx context.Context, node *pb.Node, opts ..
 
 	var address string
 
-	if node.Paddress != nil && node.Paddress.Address != "" {
-		address = node.GetPaddress().Address
-	} else if node.Address != nil && node.Address.Address != "" {
+	if node.Address != nil && node.Address.Address != "" {
 		address = node.GetAddress().Address
 	} else {
 		return nil, Error.New("no address")

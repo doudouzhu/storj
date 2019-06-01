@@ -23,9 +23,9 @@ type Param struct {
 
 var (
 	p = &Param{
-		Token:         "secure_token",
-		UserEmail:     "admin@bonuscloud.io",
-		UserPassword:  "qwer1234",
+		Token:         "",
+		UserEmail:     "",
+		UserPassword:  "",
 		UserShortName: "store",
 		UserFullName:  "storj store",
 		ProjectName:   "store",

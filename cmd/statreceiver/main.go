@@ -84,11 +84,13 @@ func Main(cmd *cobra.Command, args []string) error {
 		scope.RegisterVal("mbufprep", NewMetricBufPrep),
 	)
 	if err != nil {
+		log.Printf("scope Register fail, err=%s\n", err)
 		return err
 	}
 
 	err = scope.Run(input)
 	if err != nil {
+		log.Printf("scope run fail, err=%s\n", err)
 		return err
 	}
 

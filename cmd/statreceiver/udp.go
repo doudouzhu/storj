@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"sync"
 	"time"
@@ -36,10 +37,12 @@ func (s *UDPSource) Next() ([]byte, time.Time, error) {
 	if s.conn == nil {
 		addr, err := net.ResolveUDPAddr("udp", s.address)
 		if err != nil {
+			log.Printf("resolveUDPAddr fail, err=%s\n", err)
 			return nil, time.Time{}, err
 		}
 		conn, err := net.ListenUDP("udp", addr)
 		if err != nil {
+			log.Printf("ListenUDPAddr fail, err=%s\n", err)
 			return nil, time.Time{}, err
 		}
 		s.conn = conn
@@ -47,6 +50,7 @@ func (s *UDPSource) Next() ([]byte, time.Time, error) {
 
 	n, _, err := s.conn.ReadFrom(s.buf[:])
 	if err != nil {
+		log.Printf("UDPSource Next fail, err=%s\n", err)
 		return nil, time.Time{}, err
 	}
 	return s.buf[:n], time.Now(), nil
@@ -91,10 +95,12 @@ func (d *UDPDest) Packet(data []byte, ts time.Time) error {
 	if d.conn == nil {
 		addr, err := net.ResolveUDPAddr("udp", d.address)
 		if err != nil {
+			log.Printf("ResolveUDPAddr fail, err=%s", err)
 			return err
 		}
 		conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: 0})
 		if err != nil {
+			log.Printf("ListenUDP fail, err=%s", err)
 			return err
 		}
 		d.addr = addr

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"sync"
 
 	lua "github.com/Shopify/go-lua"
@@ -49,6 +50,7 @@ func (scope *Scope) register(name string, val interface{}, pusher func(l *lua.St
 	scope.registrations[name] = func(l *lua.State) error {
 		err := pusher(l, val)
 		if err != nil {
+			log.Printf("register fail, err=%s\n", err)
 			return err
 		}
 		l.SetGlobal(name)
@@ -72,15 +74,20 @@ func (scope *Scope) Run(in io.Reader) error {
 	for _, reg := range registrations {
 		err := reg(l)
 		if err != nil {
+			log.Printf("scope run fail, err=%s\n", err)
 			return err
 		}
 	}
 
 	data, err := ioutil.ReadAll(in)
 	if err != nil {
+		log.Printf("scope run readAll fail, err=%s", err)
 		return err
 	}
 
 	err = lua.DoString(l, string(data))
+	if err != nil {
+		log.Printf("scope DoString fail, err=%s", err)
+	}
 	return err
 }

@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"encoding/gob"
 	"io"
+	"log"
 	"os"
 	"sync"
 	"time"
@@ -32,6 +33,7 @@ func (f *FileSource) Next() ([]byte, time.Time, error) {
 	if f.decoder == nil {
 		file, err := os.Open(f.path)
 		if err != nil {
+			log.Printf("FileSource Next Open fail, err=%s\n", err)
 			return nil, time.Time{}, err
 		}
 		f.decoder = gob.NewDecoder(bufio.NewReader(file))
@@ -40,6 +42,7 @@ func (f *FileSource) Next() ([]byte, time.Time, error) {
 	var p Packet
 	err := f.decoder.Decode(&p)
 	if err != nil {
+		log.Printf("FileSource Next Decode fail, err=%s\n", err)
 		return nil, time.Time{}, err
 	}
 	return p.Data, p.TS, nil
@@ -68,6 +71,7 @@ func (f *FileDest) Packet(data []byte, ts time.Time) error {
 	if f.encoder == nil {
 		file, err := os.Create(f.path)
 		if err != nil {
+			log.Printf("Packet Create fail, err=%s\n", err)
 			return err
 		}
 		f.file = file
